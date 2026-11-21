@@ -1,0 +1,11 @@
+{
+  "cards": 4,
+  "rows": 5,
+  "columns": 5,
+  "free": true,
+  "universal": 6,
+  "exclusive": 6,
+  "seed": "12345",
+  "input": "cliches.json",
+  "output": "sample-bingo.pdf"
+}
