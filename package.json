@@ -3,16 +3,23 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "generate": "node src/cli.ts",
     "test": "node --test test/*.test.ts",
     "check": "tsc"
   },
-  "dependencies": { "pdfkit": "^0.17.2" },
+  "dependencies": {
+    "@twemoji/svg": "^15.0.0",
+    "pdfkit": "^0.17.2",
+    "svg-to-pdfkit": "^0.1.8"
+  },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/pdfkit": "^0.17.0",
+    "@types/svg-to-pdfkit": "^0.1.5",
     "typescript": "^5.9.0"
   }
 }

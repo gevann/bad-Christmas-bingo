@@ -119,3 +119,13 @@ test('CLI writes a reproducible four-page Letter PDF and rejects invalid flags',
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('all catalogue entries retain a printable emoji, including joined sequences', async () => {
+  const { emojiArtwork } = await import('../src/emoji.ts');
+  for (const entry of catalogue) {
+    assert.ok(entry.emoji, entry.text);
+    assert.match(emojiArtwork(entry.emoji), /<svg/);
+  }
+  assert.throws(() => emojiArtwork('not an emoji'), /No artwork/);
+  assert.equal(parseCatalogue([{ id: 1, text: 'Snow' }])[0].emoji, undefined);
+});
