@@ -1,3 +1,5 @@
+import drawSvg from 'svg-to-pdfkit';
+import { emojiArtwork } from './emoji.ts';
 import PDFDocument from 'pdfkit';
 import { placeCard } from './bingo.ts';
 import type { Cliche, Grid } from './bingo.ts';
@@ -23,9 +25,9 @@ export async function renderPdf(
 ): Promise<Buffer> {
   const doc = new PDFDocument({
     autoFirstPage: false, size: 'LETTER', margin: 0,
-    info: { Title: 'Bad Christmas Movie Bingo', CreationDate: new Date(0) },
+    info: { Title: 'Bad Christmas Movie Bingo', CreationDate: new Date(0), Subject: 'Emoji artwork by Twitter and other contributors (Twemoji), https://twemoji.twitter.com/ — CC BY 4.0, https://creativecommons.org/licenses/by/4.0/' },
   });
-  const labels = new Map(catalogue.map(({ id, text }) => [id, text]));
+  const labels = new Map(catalogue.map(entry => [entry.id, entry]));
   const cellWidth = width / grid.columns;
   const cellHeight = gridHeight / grid.rows;
   const textWidth = cellWidth - 2 * padding;
@@ -34,12 +36,15 @@ export async function renderPdf(
     throw new Error('The grid is too dense for readable text on US Letter. Use fewer rows or columns.');
   }
 
-  const fitted = new Map<number | null, { lines: string[]; font: string; size: number; lineHeight: number }>();
+  const fitted = new Map<number | null, { lines: string[]; font: string; size: number; lineHeight: number; artwork?: string; iconSize: number }>();
   const used = new Set<number | null>(cards.flatMap(card => [...card]));
   if (grid.free) used.add(null);
   // Measure every selected label before writing pages. Keep all cells readable at 9 pt or larger.
   for (const id of used) {
-    const text = id === null ? 'FREE' : labels.get(id);
+    const entry = id === null ? undefined : labels.get(id);
+    const text = id === null ? 'FREE' : entry?.text;
+    const emoji = id === null ? '🎄' : entry?.emoji;
+    const artwork = emoji && emojiArtwork(emoji);
     if (text === undefined) throw new Error(`No catalogue text for cliché ID ${id}.`);
     if ([...text].some(character => !/^[ -~]$/u.test(character) && !winAnsi.has(character))) {
       throw new Error(`Cliché ${id} contains a character outside the PDF font's Windows-1252 alphabet.`);
@@ -64,8 +69,10 @@ export async function renderPdf(
       }
       lines.push(line);
       const lineHeight = doc.currentLineHeight(true) + 2;
-      if (lines.length * lineHeight <= textHeight) {
-        fit = { lines, font, size, lineHeight };
+      const spareHeight = textHeight - lines.length * lineHeight;
+      const iconSize = artwork ? Math.min(id === null ? 35 : 22, textWidth, spareHeight - 4) : 0;
+      if (spareHeight >= 0 && (!artwork || iconSize >= 12 || size === minimumFontSize)) {
+        fit = { lines, font, size, lineHeight, artwork, iconSize: iconSize >= 8 ? iconSize : 0 };
         break;
       }
     }
@@ -75,7 +82,14 @@ export async function renderPdf(
 
   for (const [index, card] of cards.entries()) {
     doc.addPage();
-    doc.rect(inset, 43, 30, 3).fill(berry);
+    // A scalloped strand with alternating coloured bulbs spans the title block.
+    const bulbColors = [berry, '#c48b33', green];
+    for (let strand = 0; strand < 7; strand++) {
+      const x = inset + strand * 76;
+      doc.moveTo(x, 27).quadraticCurveTo(x + 38, 43, x + 76, 27).lineWidth(0.9).stroke(green);
+      doc.rect(x + 36.5, 35, 3, 3).fill(green);
+      doc.ellipse(x + 38, 41, 3, 4.5).fill(bulbColors[strand % bulbColors.length]);
+    }
     doc.font('Helvetica-Bold').fontSize(10).fillColor(berry)
       .text('CHRISTMAS MOVIE NIGHT', inset, 57, { lineBreak: false });
     doc.font('Times-Bold').fontSize(39).fillColor(green)
@@ -92,7 +106,13 @@ export async function renderPdf(
       if (id === null) doc.rect(x, y, cellWidth, cellHeight).fill('#eef3ed');
       const fit = fitted.get(id)!;
       doc.font(fit.font).fontSize(fit.size).fillColor(id === null ? green : ink);
-      const top = y + (cellHeight - fit.lines.length * fit.lineHeight) / 2;
+      const iconSpace = fit.iconSize ? fit.iconSize + 4 : 0;
+      const blockTop = y + (cellHeight - fit.lines.length * fit.lineHeight - iconSpace) / 2;
+      if (fit.artwork && fit.iconSize) {
+        drawSvg(doc, fit.artwork, x + (cellWidth - fit.iconSize) / 2, blockTop,
+          { width: fit.iconSize, height: fit.iconSize, assumePt: true });
+      }
+      const top = blockTop + iconSpace;
       for (const [lineIndex, line] of fit.lines.entries()) {
         doc.text(line, x + (cellWidth - doc.widthOfString(line)) / 2,
           top + lineIndex * fit.lineHeight, { lineBreak: false });

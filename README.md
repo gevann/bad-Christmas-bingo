@@ -40,9 +40,13 @@ For three or more cards, subtract universal and exclusive slots from the cliché
 Edit `cliches.json` and append an object with a new positive integer ID and a short, unique phrase. Keep existing IDs stable when you edit or reorder entries.
 
 ```json
-{ "id": 61, "text": "An ugly sweater wins a prize", "category": "Wardrobe", "rarity": "common" }
+{ "id": 61, "text": "An ugly sweater wins a prize", "emoji": "🧶", "category": "Wardrobe", "rarity": "common" }
 ```
 
 Category and rarity are optional metadata. All entries have equal selection weight. The built-in PDF fonts support Windows-1252 text, including common Western European accents and curly quotes. The CLI reports which selected label needs editing if it contains an unsupported character or cannot fit at 9 pt.
 
 The generator in `src/bingo.ts` returns sets of IDs. The PDF renderer in `src/pdf.ts` shuffles each set independently as it lays out that card.
+
+Each entry can include one optional `emoji` from Twemoji 15. The generator embeds its vector artwork directly in the PDF. Text-only entries also work. On crowded grids, the renderer reduces the icon size and can omit it to preserve readable text.
+
+Emoji artwork by Twitter and other contributors. [Twemoji](https://github.com/jdecked/twemoji) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
