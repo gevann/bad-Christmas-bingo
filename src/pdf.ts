@@ -19,6 +19,45 @@ const winAnsi = new Set(new TextDecoder('windows-1252').decode(
   Uint8Array.from({ length: 128 }, (_, index) => index + 128),
 ).replace(/[\u0080-\u009f\ufffd]/gu, ''));
 
+function holly(doc: PDFKit.PDFDocument, x: number, y: number, angle: number) {
+  doc.save().translate(x, y).rotate(angle);
+  for (const tilt of [-37, 37]) {
+    doc.save().rotate(tilt);
+    doc.path('M0 0 Q-2 -4 -5 -4 Q-3 -7 -6 -10 Q-3 -10 -2 -14 L0 -19 Q1 -15 4 -13 Q2 -10 6 -9 Q3 -6 5 -4 Q2 -3 0 0 Z')
+      .fill(green);
+    doc.moveTo(0, -2).lineTo(0, -14).lineWidth(0.6).stroke('#a3bca5').restore();
+  }
+  for (const [dx, dy] of [[-2.4, 0], [2.4, 0], [0, 3.5]]) {
+    doc.circle(dx, dy, 2.8).fill(berry);
+    doc.circle(dx - 0.7, dy - 0.8, 0.6).fill('#fff4de');
+  }
+  doc.restore();
+}
+
+function drawBorder(doc: PDFKit.PDFDocument) {
+  doc.save();
+  for (const x of [26, pageWidth - 26]) {
+    // A narrow peppermint stripe runs beside the grid, inside the print margin.
+    doc.save().rect(x - 2, gridTop, 4, gridHeight).clip();
+    doc.rect(x - 2, gridTop, 4, gridHeight).fill('#fbf2de');
+    for (let y = gridTop - 5; y < gridTop + gridHeight + 5; y += 13) {
+      doc.moveTo(x - 3, y + 5).lineTo(x + 3, y - 1).lineWidth(3).stroke(berry);
+    }
+    doc.restore();
+  }
+  for (const x of [inset, pageWidth - inset]) {
+    holly(doc, x, gridTop - 6, x === inset ? -35 : 35);
+    holly(doc, x, gridTop + gridHeight + 12, 180);
+  }
+  // A gold rule and three berries finish the frame beneath the game instructions.
+  const middle = pageWidth / 2;
+  doc.lineWidth(0.7).strokeColor('#b58a45');
+  doc.moveTo(inset, 759).lineTo(middle - 15, 759)
+    .moveTo(middle + 15, 759).lineTo(pageWidth - inset, 759).stroke();
+  for (const offset of [-6, 0, 6]) doc.circle(middle + offset, 759, 1.7).fill(berry);
+  doc.restore();
+}
+
 export async function renderPdf(
   cards: readonly ReadonlySet<number>[], catalogue: readonly Cliche[],
   grid: Grid, layoutSeed: string,
@@ -82,6 +121,7 @@ export async function renderPdf(
 
   for (const [index, card] of cards.entries()) {
     doc.addPage();
+    drawBorder(doc);
     // A scalloped strand with alternating coloured bulbs spans the title block.
     const bulbColors = [berry, '#c48b33', green];
     for (let strand = 0; strand < 7; strand++) {
