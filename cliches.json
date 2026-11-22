@@ -58,5 +58,13 @@
   {"id": 57, "text": "A character admits they were afraid to start over", "category": "Final act", "emoji": "🌱"},
   {"id": 58, "text": "An estranged relative shows up for dinner", "category": "Final act", "emoji": "🍽️"},
   {"id": 59, "text": "The whole town pitches in at the last minute", "category": "Final act", "emoji": "🤝"},
-  {"id": 60, "text": "Christmas morning ends with a flash-forward", "category": "Final act", "emoji": "⏩"}
+  {"id": 60, "text": "Christmas morning ends with a flash-forward", "category": "Final act", "emoji": "⏩"},
+  {"id": 61, "text": "Christmas montage", "category": "Holiday traditions", "emoji": "🎬"},
+  {"id": 62, "text": "Someone says “high school”", "category": "Homecoming", "emoji": "🏫"},
+  {"id": 63, "text": "Big holiday party. All seven people are there.", "category": "Holiday traditions", "emoji": "🥳"},
+  {"id": 64, "text": "An old flame is back in town", "category": "Homecoming", "emoji": "❤️‍🔥"},
+  {"id": 65, "text": "The big secret makes them look even better", "category": "Romance", "emoji": "😇"},
+  {"id": 66, "text": "The lead’s family runs a family business", "category": "Homecoming", "emoji": "🏬"},
+  {"id": 67, "text": "Someone says “old family recipe”", "category": "Holiday traditions", "emoji": "🥣"},
+  {"id": 68, "text": "The parents hope the lead will move back home", "category": "Homecoming", "emoji": "🏡"}
 ]
