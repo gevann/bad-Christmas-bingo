@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
-export type Cliche = { id: number; text: string; emoji?: string; category?: string; rarity?: string | number };
+export type Movie = { title: string; year: number; note?: string; source?: string };
+export type Cliche = { id: number; text: string; movies?: Movie[]; emoji?: string; category?: string; rarity?: string | number };
 export type Grid = { rows: number; columns: number; free: boolean };
 export type Config = Grid & { cards: number; universal: number; exclusive: number };
 
@@ -35,6 +36,28 @@ export function plan(config: Config) {
   return { slots, perPair, required };
 }
 
+function parseMovies(value: unknown, id: number): Movie[] {
+  if (!Array.isArray(value)) throw new Error(`Cliché ${id}: movies must be an array.`);
+  const seen = new Set<string>();
+  return value.map((movie, index) => {
+    const label = `Cliché ${id}, movie ${index + 1}`;
+    if (!movie || typeof movie.title !== 'string' || !movie.title.trim() ||
+        !Number.isSafeInteger(movie.year) || movie.year < 1000 || movie.year > 9999) {
+      throw new Error(`${label}: supply a title and four-digit release year.`);
+    }
+    const title = movie.title.trim().replace(/\s+/gu, ' ');
+    const key = JSON.stringify([title.normalize('NFKC').toLowerCase(), movie.year]);
+    if (seen.has(key)) throw new Error(`${label}: duplicate film "${title}" (${movie.year}).`);
+    seen.add(key);
+    for (const field of ['note', 'source']) {
+      if (field in movie && (typeof movie[field] !== 'string' || !movie[field].trim())) {
+        throw new Error(`${label}: ${field} must be nonempty text.`);
+      }
+    }
+    return { title, year: movie.year, note: movie.note, source: movie.source };
+  });
+}
+
 export function parseCatalogue(value: unknown): Cliche[] {
   if (!Array.isArray(value)) throw new Error('Catalogue must be a JSON array.');
   const ids = new Set<number>();
@@ -63,7 +86,8 @@ export function parseCatalogue(value: unknown): Cliche[] {
     if (emoji !== undefined && (typeof emoji !== 'string' || !emoji.trim())) {
       throw new Error(`Cliché ${id}: emoji must be a nonempty string.`);
     }
-    return { id, text: label, category, rarity, emoji };
+    const movies = parseMovies('movies' in entry ? entry.movies : [], id);
+    return { id, text: label, category, rarity, emoji, movies };
   });
 }
 
