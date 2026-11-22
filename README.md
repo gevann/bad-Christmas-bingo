@@ -68,7 +68,9 @@ Append a film to the matching cliché’s `movies` array, or add a new cliché w
 
 Use `--min-evidence 2` or set `"minEvidence": 2` in the configuration to draw only from clichés documented in at least two distinct movies. Each title and release year counts once per cliché, even if the scene happens repeatedly. Use the existing entry to expand its evidence. Remakes with different years count separately. The default of zero includes undocumented entries and older catalogues without a movies field.
 
-The default four cards need 54 eligible clichés. To try the current starter evidence on a single square:
+The default four cards need 54 eligible clichés. The November 2026 catalogue has 170 entries with at least one documented film, so the default layout works with `--min-evidence 1`. For the regions and subscriptions used in the research pass, see the [streaming listings](research/streaming-pass.md).
+
+For a single square drawn from entries with two or more films:
 
 ```sh
 npm run generate -- --min-evidence 2 --cards 1 --rows 1 --columns 1 --no-free --universal 0 --exclusive 1
