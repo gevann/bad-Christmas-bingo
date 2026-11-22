@@ -1,5 +1,6 @@
 {
   "cards": 4,
+  "minEvidence": 0,
   "rows": 5,
   "columns": 5,
   "free": true,

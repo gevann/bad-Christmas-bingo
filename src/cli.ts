@@ -17,6 +17,7 @@ const help = `Usage: npm run generate -- [options]
   --free / --no-free  Enable or disable the centre square (default: enabled)
   --universal N       Clichés shared by all cards (default: 6)
   --exclusive N       Clichés unique to each card (default: 6)
+  --min-evidence N    Minimum distinct movies per cliché (default: 0)
   --seed TEXT         Membership and default placement seed
   --layout-seed TEXT  Override placement seed only
   --help              Show this message`;
@@ -36,7 +37,7 @@ async function main() {
       cards: { type: 'string' }, rows: { type: 'string' }, columns: { type: 'string' },
       universal: { type: 'string' }, exclusive: { type: 'string' },
       free: { type: 'boolean' }, 'no-free': { type: 'boolean' }, seed: { type: 'string' },
-      'layout-seed': { type: 'string' }, help: { type: 'boolean', short: 'h' },
+      'min-evidence': { type: 'string' }, 'layout-seed': { type: 'string' }, help: { type: 'boolean', short: 'h' },
     },
   });
   if (values.help) {
@@ -47,7 +48,7 @@ async function main() {
   const file = values.config === undefined ? {} : await readJson(values.config);
   if (!file || typeof file !== 'object' || Array.isArray(file)) throw new Error('Config must be a JSON object.');
   const saved = file as Record<string, unknown>;
-  const allowed = new Set([...Object.keys(defaults), 'input', 'output', 'seed', 'layoutSeed']);
+  const allowed = new Set([...Object.keys(defaults), 'input', 'output', 'seed', 'layoutSeed', 'minEvidence']);
   for (const key of Object.keys(saved)) {
     if (!allowed.has(key)) throw new Error(`Unknown config property "${key}".`);
   }
@@ -80,7 +81,17 @@ async function main() {
     if (await realpath(source) === outputTarget) throw new Error('Output must be a different file from the catalogue and configuration.');
   }
   const catalogue = parseCatalogue(await readJson(input));
-  const cards = generateMembership(catalogue, config, seed);
+  const flag = values['min-evidence'];
+  const minimum = flag === undefined ? ('minEvidence' in saved ? saved.minEvidence : 0)
+    : /^\d+$/u.test(flag) ? Number(flag) : NaN;
+  if (typeof minimum !== 'number' || !Number.isSafeInteger(minimum) || minimum < 0) {
+    throw new Error('--min-evidence (minEvidence in JSON) must be a nonnegative integer.');
+  }
+  const eligible = catalogue.filter(entry => (entry.movies?.length ?? 0) >= minimum);
+  if (minimum > 0 && eligible.length < required) {
+    throw new Error(`Only ${eligible.length} of ${catalogue.length} clichés meet --min-evidence ${minimum}; this configuration needs ${required}. Lower the threshold, add movie evidence, or use fewer squares.`);
+  }
+  const cards = generateMembership(eligible, config, seed);
   await writeFile(output, await renderPdf(cards, catalogue, config, layoutSeed));
   console.log(`Wrote ${cards.length} cards to ${output} using ${required} clichés (${perPair} pair-specific per pair).`);
   console.log(`Seed: ${JSON.stringify(seed)} | Layout seed: ${JSON.stringify(layoutSeed)}`);

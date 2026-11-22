@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -128,4 +128,38 @@ test('all catalogue entries retain a printable emoji, including joined sequences
   }
   assert.throws(() => emojiArtwork('not an emoji'), /No artwork/);
   assert.equal(parseCatalogue([{ id: 1, text: 'Snow' }])[0].emoji, undefined);
+});
+
+test('movie evidence distinguishes remakes and rejects duplicate or malformed records', () => {
+  const parse = (movies: unknown) => parseCatalogue([{ id: 1, text: 'Snow', movies }]);
+  const film = { title: 'Snow Day', year: 2000 };
+  assert.equal(parse([film, { ...film, year: 2022 }])[0].movies?.length, 2);
+  assert.throws(() => parse([film, { ...film, title: '  SNOW   DAY' }]), /duplicate film/);
+  assert.throws(() => parse([{ title: 'Snow Day' }]), /release year/);
+  assert.throws(() => parse(null), /must be an array/);
+  assert.deepEqual(parseCatalogue([{ id: 1, text: 'Snow' }])[0].movies, []);
+});
+
+test('CLI applies an inclusive evidence threshold before membership selection', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'evidence-'));
+  try {
+    const input = join(directory, 'catalogue.json');
+    const config = join(directory, 'config.json');
+    const output = join(directory, 'card.pdf');
+    const movies = [{ title: 'Movie A', year: 2010 }, { title: 'Movie B', year: 2011 }];
+    const entries = [{ id: 1, text: 'Eligible', movies }, { id: 2, text: 'Below threshold', movies: movies.slice(1) }];
+    writeFileSync(input, JSON.stringify(entries));
+    writeFileSync(config, JSON.stringify({ cards: 1, rows: 1, columns: 1, free: false,
+      exclusive: 1, universal: 0, input, output, minEvidence: 2, seed }));
+    const run = (...args: string[]) => spawnSync(process.execPath, ['src/cli.ts', '--config', config, ...args], { encoding: 'utf8' });
+    assert.equal(run().status, 0);
+    const filtered = readFileSync(output);
+    assert.match(run('--min-evidence', '3').stderr, /Only 0 of 2.*needs 1/);
+    assert.match(run('--min-evidence=-1').stderr, /nonnegative integer/);
+    writeFileSync(input, JSON.stringify(entries.slice(0, 1)));
+    assert.equal(run('--min-evidence', '0').status, 0);
+    assert.deepEqual(readFileSync(output), filtered);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

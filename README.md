@@ -50,3 +50,26 @@ The generator in `src/bingo.ts` returns sets of IDs. The PDF renderer in `src/pd
 Each entry can include one optional `emoji` from Twemoji 15. The generator embeds its vector artwork directly in the PDF. Text-only entries also work. On crowded grids, the renderer reduces the icon size and can omit it to preserve readable text.
 
 Emoji artwork by Twitter and other contributors. [Twemoji](https://github.com/jdecked/twemoji) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+## Contribute movie evidence
+
+Append a film to the matching cliché’s `movies` array, or add a new cliché with an unused ID. Use the film’s release title and year. Include a short scene description or timestamp in `note` and a supporting URL in `source` when available. A firsthand viewing can be recorded without a web link. For dialogue squares, record the actual line. An empty list means the entry is awaiting evidence.
+
+```json
+"movies": [
+  {
+    "title": "An Unexpected Christmas",
+    "year": 2021,
+    "note": "A speechwriter and his ex pretend they are still together for his family.",
+    "source": "https://www.hallmarkchannel.com/an-unexpected-christmas/about-an-unexpected-christmas"
+  }
+]
+```
+
+Use `--min-evidence 2` or set `"minEvidence": 2` in the configuration to draw only from clichés documented in at least two distinct movies. Each title and release year counts once per cliché, even if the scene happens repeatedly. Use the existing entry to expand its evidence. Remakes with different years count separately. The default of zero includes undocumented entries and older catalogues without a movies field.
+
+The default four cards need 54 eligible clichés. To try the current starter evidence on a single square:
+
+```sh
+npm run generate -- --min-evidence 2 --cards 1 --rows 1 --columns 1 --no-free --universal 0 --exclusive 1
+```
